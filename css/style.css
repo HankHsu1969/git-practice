@@ -92,6 +92,8 @@ code { font-family: var(--mono); font-size: .9em; background: var(--panel-2); bo
 .logo circle { fill: #fff; }
 .logo path { stroke: #fff; stroke-width: 2; fill: none; }
 .brand-name { font-weight: 800; font-size: 18px; white-space: nowrap; }
+.visitors { display: inline-flex; align-items: center; gap: 3px; font-size: 12.5px; color: var(--muted); background: var(--panel-2); border: 1px solid var(--border); border-radius: 99px; padding: 2px 10px; white-space: nowrap; animation: fadeIn .5s ease-out; }
+.visitors b { color: var(--accent-text); font-weight: 800; font-variant-numeric: tabular-nums; }
 .stepper { flex: 1; display: flex; justify-content: center; overflow-x: auto; scrollbar-width: none; min-width: 0; }
 .stepper::-webkit-scrollbar { display: none; }
 .stp { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; border: 0; background: none; padding: 4px 6px; min-width: 64px; flex: none; }
@@ -333,4 +335,8 @@ code { font-family: var(--mono); font-size: .9em; background: var(--panel-2); bo
   .flow .arrow { transform: rotate(90deg); }
   .flow-back .arrow { transform: rotate(-90deg); }
   .flow-fwd, .flow-back { flex-direction: row; gap: 4px; }
+}
+
+@media (max-width: 480px) {
+  .visitors-label { display: none; }
 }

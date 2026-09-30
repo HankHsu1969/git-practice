@@ -458,7 +458,29 @@
     requestAnimationFrame(() => { els.lesson.scrollTop = els.lesson.scrollHeight; });
   }
 
+  /* ================= 練習人數 ================= */
+  // 使用免費的 Abacus 計數服務。每個瀏覽器只計一次（localStorage 記號）；
+  // 本機開發伺服器只讀取不計數；服務連不上時就不顯示。
+  function showVisitors() {
+    const el = $('#visitors');
+    const COUNTED = 'git-lab-counted';
+    const isDev = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+    let canRemember = false;
+    try { localStorage.setItem('git-lab-probe', '1'); localStorage.removeItem('git-lab-probe'); canRemember = true; } catch (e) { /* 無法記住就只讀取，避免重複計數 */ }
+    const hit = canRemember && !isDev && !store.get(COUNTED, false);
+    fetch(`https://abacus.jasoncameron.dev/${hit ? 'hit' : 'get'}/${el.dataset.counter}`)
+      .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+      .then((d) => {
+        if (typeof d.value !== 'number' || d.value < 0) return;
+        if (hit) store.set(COUNTED, true);
+        $('#visitorCount').textContent = d.value.toLocaleString('zh-TW');
+        el.hidden = false;
+      })
+      .catch(() => { /* 計數服務失敗不影響練習 */ });
+  }
+
   /* ================= 開始 ================= */
   $('#btnReset').addEventListener('click', () => loadLesson(cur));
   loadLesson(typeof progress.current === 'number' ? progress.current : 0);
+  showVisitors();
 })();
