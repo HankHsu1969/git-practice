@@ -6,9 +6,9 @@
 
 ## 學什麼
 
-9 堂小課，只教最基礎的指令：
+10 堂小課，只教最基礎的指令：
 
-`git init` · `git add` · `git commit` · `git status` · `git log` · `git restore` · `git branch` · `git switch` · `git merge`
+`git init` · `git add` · `git commit` · `git status` · `git log` · `git restore` · `git reset` · `git branch` · `git switch` · `git merge`
 
 ## 特色
 

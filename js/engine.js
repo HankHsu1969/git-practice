@@ -16,6 +16,7 @@
     commit: '把暫存區存成快照',
     log: '查看歷史紀錄',
     restore: '復原檔案的修改',
+    reset: '把分支退回之前的 commit',
     branch: '列出 / 建立分支',
     switch: '切換分支',
     merge: '合併分支',
@@ -25,7 +26,6 @@
   // 真實存在但不在入門範圍的指令：給出替代建議
   const OUT_OF_SCOPE = {
     checkout: '請改用 git switch（切換分支）或 git restore（復原檔案），這是新版 Git 推薦的寫法。',
-    reset: '想丟棄修改請用 git restore。',
     diff: '這個練習用右邊的圖形來看差異：把滑鼠移到檔案卡片上就能看到內容。',
     rm: '要刪除檔案，這個練習裡不需要用到它。',
     config: '這個練習已經幫你設定好作者資訊了。',
@@ -1206,6 +1206,86 @@
           : `${listNames(names)} 在工作目錄中沒有修改，所以沒有任何變化。`);
       }
       this.say(msg.join('<br>'));
+      return true;
+    }
+
+    git_reset(args) {
+      const r = this.repo;
+      let mode = 'mixed';
+      const pos = [];
+      for (const a of args) {
+        if (a === '--soft' || a === '--mixed' || a === '--hard') mode = a.slice(2);
+        else if (a === '--') continue;
+        else if (a.startsWith('-')) return this.err(`error: unknown option \`${a.replace(/^-+/, '')}'`);
+        else pos.push(a);
+      }
+      if (!this.headId) {
+        this.err("fatal: ambiguous argument 'HEAD': unknown revision or path not in the working tree.");
+        this.say('還沒有任何 commit，所以沒有地方可以退回。先完成第一次 commit 吧！');
+        return false;
+      }
+      // git reset <檔名>：取消暫存（等同 git restore --staged）
+      if (pos.length && !this.resolve(pos[0])) {
+        const known = union(r.index, this.headTree());
+        if (pos.every((p) => this.matchPaths(p, known).length)) {
+          if (mode !== 'mixed') return this.err(`fatal: Cannot do ${mode} reset with paths.`);
+          const ok = this.restorePaths(pos, { staged: true }, 'reset');
+          if (ok) this.explain += `<br><span class="x-muted">💡 取消暫存比較建議用 ${code('git restore --staged ' + pos[0])}，意思更清楚。</span>`;
+          return ok;
+        }
+        this.err(`fatal: ambiguous argument '${pos[0]}': unknown revision or path not in the working tree.`);
+        this.say(/^(HEAD|@)[~^]/.test(pos[0])
+          ? `找不到 ${code(pos[0])}：你已經在最早的 commit 了，沒有更早的 commit 可以退回。`
+          : `找不到 ${code(pos[0])}。常見的寫法是 ${code('git reset HEAD~1')}（退回上一個 commit），或填入圖上某個 commit 的 ID。`);
+        return false;
+      }
+      if (r.merge && mode === 'soft') return this.err('fatal: Cannot do a soft reset in the middle of a merge.');
+      const target = pos.length ? this.resolve(pos[0]) : this.headId;
+      const oldHead = this.headId, oldTree = this.headTree(), oldIdx = clone(r.index);
+      const T = this.tree(target);
+      const where = this.branch || 'HEAD';
+
+      this.moveHead(target);
+      if (mode !== 'soft') {
+        const chIdx = union(oldIdx, T).filter((f) => oldIdx[f] !== T[f]);
+        r.index = clone(T);
+        if (chIdx.length) this.events.push({ type: 'restore', files: chIdx, from: 'head', to: 'idx' });
+        r.merge = null;
+      }
+      if (mode === 'hard') {
+        const chWd = [];
+        union(oldIdx, oldTree, T).forEach((f) => {
+          const before = this.files[f];
+          if (hasOwn(T, f)) this.files[f] = T[f]; else delete this.files[f];
+          if (before !== this.files[f]) chWd.push(f);
+        });
+        if (chWd.length) this.events.push({ type: 'restore', files: chWd, from: 'head', to: 'wd' });
+        this.print(`HEAD is now at ${target} ${this.commit(target).msg.split('\n')[0]}`);
+      } else if (mode === 'mixed') {
+        const st = this.computeStatus();
+        if (st.unstaged.length) {
+          this.print('Unstaged changes after reset:');
+          st.unstaged.forEach(([k, f]) => this.print((k === 'deleted' ? 'D' : 'M') + '\t' + f));
+        }
+      }
+
+      // 退回後沒有任何分支指向的 commit 數
+      const keep = this.reachableFromBranches();
+      if (this.headId) this.ancestors(this.headId).forEach((x) => keep.add(x));
+      const dropped = oldHead === target ? 0 : [...this.ancestors(oldHead)].filter((x) => !keep.has(x)).length;
+      const moved = oldHead === target
+        ? `${b(where)} 還是指向 ${code(target)}。`
+        : `${b(where)} 分支標籤從 ${code(oldHead)} <b>往回</b>移到 ${code(target)}。`;
+      const lost = dropped ? `<br>後面的 ${dropped} 個 commit 沒有分支指向了（圖上變成虛線）。` : '';
+      if (mode === 'soft') {
+        this.say(`<b>reset --soft</b>：${moved}暫存區和工作目錄都<b>沒變</b>，所以被取消的 commit 內容變成「已暫存」，可以直接重新 commit。${lost}`);
+      } else if (mode === 'mixed') {
+        this.say(oldHead === target
+          ? `把暫存區恢復成 ${code(target)} 的內容（取消所有暫存）。工作目錄的修改還在。`
+          : `<b>reset</b>（預設模式）：${moved}被取消的 commit 內容<b>還留在工作目錄</b>（變成「已修改」），你可以改一改再重新 add + commit。${lost}`);
+      } else {
+        this.say(`⚠ <b>reset --hard</b>：${moved}而且暫存區和工作目錄也<b>全部</b>變回那個 commit 的樣子，之後的修改都被丟掉了！${lost}<br>💡 reset 只適合用在還沒分享給別人（還沒 push）的 commit 上。`);
+      }
       return true;
     }
 

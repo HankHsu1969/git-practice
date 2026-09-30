@@ -149,6 +149,7 @@
       if (eng.repo) {
         Object.keys(eng.repo.branches).forEach((b) => s.add(b));
         Object.keys(eng.repo.index).forEach((f) => s.add(f));
+        if (parts[1] === 'reset') ['HEAD~1', '--hard'].forEach((x) => s.add(x));
       }
       cands = [...s];
     }

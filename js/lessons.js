@@ -12,7 +12,8 @@
   const ran = (ctx, re) => ctx.since.some((c) => re.test(c));
   const onBranch = (g, name) => !!g.repo && g.branch === name;
   const br = (g, name) => (g.repo ? g.repo.branches[name] : undefined);
-  const headParents = (g) => (g.headId ? g.repo.commits[g.headId].parents.length : 0);
+  const headMsg = (g) => (g.headId ? g.repo.commits[g.headId].msg : null);
+  const headParents =(g) => (g.headId ? g.repo.commits[g.headId].parents.length : 0);
   const ahead = (g, a, base) => !!br(g, a) && br(g, a) !== br(g, base) && g.isAncestor(br(g, base), br(g, a));
 
   const START = ['echo "# 我的專案" > README.md', 'git init', 'git add README.md', 'git commit -m "第一次提交"'];
@@ -68,6 +69,17 @@
       done: 'README.md 從儲存庫飛回來，恢復成最新快照的內容了！'
     },
     {
+      id: 'reset', short: 'reset', title: '退回之前的 commit',
+      setup: START.concat(['echo "第二行" >> README.md', 'git add README.md', 'git commit -m "新增內容"', 'echo "打錯的一行" >> README.md', 'git add README.md', 'git commit -m "寫錯的 commit"']),
+      intro: 'commit 錯了？<code>git reset</code> 會把分支標籤<b>往回移</b>到之前的 commit。<code>HEAD~1</code> 代表「目前 commit 的上一個」。',
+      steps: [
+        { text: '取消最後一個 commit，但保留檔案的修改（看 main 標籤往回退）', cmd: 'git reset HEAD~1', check: (g) => headMsg(g) === '新增內容' && !!g.repo && g.files['README.md'] !== g.headTree()['README.md'] },
+        { text: 'README.md 變成橘色「已修改」：修改還在。用 status 確認', cmd: 'git status', check: (g, c) => ran(c, /^git status/) },
+        { text: '這次連修改一起丟掉，退回第一個 commit', cmd: 'git reset --hard HEAD~1', check: (g) => headMsg(g) === '第一次提交' && !!g.repo && g.files['README.md'] === g.headTree()['README.md'] }
+      ],
+      done: '<code>git reset</code> 會保留修改，<code>git reset --hard</code> 會連修改一起丟掉 ⚠。被退掉的 commit 在圖上變成虛線，因為已經沒有分支指向它們了。<br>💡 reset 只用在還沒分享給別人的 commit 上。'
+    },
+    {
       id: 'branch', short: 'branch', title: '建立分支',
       setup: START.concat(['echo "第二行" >> README.md', 'git add README.md', 'git commit -m "新增內容"']),
       intro: '<b>分支</b>就像開一條平行時空來開發新功能，不會影響主線 main。分支其實只是一張貼在 commit 上的<b>標籤</b>。',
@@ -108,7 +120,8 @@
         { text: '用 ＋ 新增檔案，並完成 3 個 commit', check: (g) => g.commitCount() >= 3 },
         { text: '建立一個分支，並在上面 commit', check: (g) => !!g.repo && Object.keys(g.repo.branches).some((b) => b !== 'main' && g.repo.branches[b] !== g.repo.branches.main) },
         { text: '把分支合併回 main', check: (g) => !!g.repo && Object.values(g.repo.commits).some((c) => c.parents.length > 1) },
-        { text: '修改一個檔案，再用 git restore 復原', check: (g, c) => ran(c, /^git restore/) }
+        { text: '修改一個檔案，再用 git restore 復原', check: (g, c) => ran(c, /^git restore/) },
+        { text: '用 git reset 取消一個 commit', check: (g, c) => ran(c, /^git reset (--(soft|mixed|hard) )?\S/) }
       ],
       done: '全部完成！接下來可以學習 GitHub 與遠端儲存庫（push / pull）。'
     }
