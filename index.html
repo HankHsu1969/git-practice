@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Git 練功房</title>
+  <meta name="description" content="給初學者的互動式 Git 練習：輸入指令，看圖學會 add、commit、branch、switch、merge">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23e8553a'/%3E%3Ccircle cx='10' cy='22' r='3.5' fill='white'/%3E%3Ccircle cx='10' cy='10' r='3.5' fill='white'/%3E%3Ccircle cx='22' cy='14' r='3.5' fill='white'/%3E%3Cpath d='M10 13.5v5M10 18c0-3 12-1 12-4' stroke='white' stroke-width='2' fill='none'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7"/><circle cx="10" cy="22" r="3.5"/><circle cx="10" cy="10" r="3.5"/><circle cx="22" cy="14" r="3.5"/><path d="M10 13.5v5M10 18c0-3 12-1 12-4"/></svg>
+      <span class="brand-name">Git 練功房</span>
+    </div>
+    <nav class="stepper" id="stepper" aria-label="課程"></nav>
+    <button id="btnReset" class="btn" title="把這一課恢復到一開始的狀態">↺ 重來</button>
+  </header>
+
+  <div class="layout">
+    <main class="left">
+      <section class="card lesson" id="lesson" aria-live="polite"></section>
+      <div class="card bubble" id="explain" aria-live="polite"></div>
+      <section class="terminal" aria-label="終端機">
+        <div class="term-head">
+          <span class="dots"><i></i><i></i><i></i></span>
+          <span class="term-title">終端機 · 在這裡輸入 Git 指令</span>
+        </div>
+        <div class="term-body" id="termBody">
+          <div id="termOut"></div>
+          <div class="term-input-line">
+            <span id="prompt"></span>
+            <input id="termInput" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="輸入指令">
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <section class="right" aria-label="圖形化的 Git">
+      <div class="card scene">
+        <div class="areas" id="areas"></div>
+      </div>
+      <div class="card graph-card">
+        <div class="card-head">
+          <h3>📷 快照歷史（commit）</h3>
+          <span class="muted small">時間 →　點圓點可填入它的 ID</span>
+        </div>
+        <div class="graph" id="graph"></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="modal" id="editor" hidden>
+    <form class="modal-box" id="editorForm" role="dialog" aria-modal="true" aria-labelledby="editorTitle">
+      <h3 id="editorTitle">編輯檔案</h3>
+      <label class="field" id="nameField">
+        <span>檔名</span>
+        <input id="editorName" type="text" autocomplete="off" spellcheck="false" placeholder="例如 login.txt">
+      </label>
+      <label class="field">
+        <span>內容</span>
+        <textarea id="editorText" rows="7" spellcheck="false"></textarea>
+      </label>
+      <p class="editor-err" id="editorErr"></p>
+      <div class="modal-actions">
+        <button type="button" class="btn" id="editorCancel">取消</button>
+        <button type="submit" class="btn primary">儲存</button>
+      </div>
+    </form>
+  </div>
+
+  <script src="js/engine.js"></script>
+  <script src="js/lessons.js"></script>
+  <script src="js/graph.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
